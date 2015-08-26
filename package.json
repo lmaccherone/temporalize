@@ -1,0 +1,26 @@
+{
+  "name": "temporalize",
+  "version": "0.1.0",
+  "description": "Time-series storage and analysis engine built on top of NoSQL databases",
+  "main": "temporalize",
+  "scripts": {
+    "test": "nodeunit"
+  },
+  "keywords": [
+    "time-series",
+    "data-store",
+    "nosql",
+    "no-sql",
+    "monte-carlo"
+  ],
+  "author": "Larry Maccherone",
+  "license": "For evaluation and non-commercial use. Contact for commericial license.",
+  "devDependencies": {
+    "coffee-script": "^1.9.3",
+    "nodeunit": "^0.9.1"
+  },
+  "dependencies": {
+    "lumenize": "^0.9.12",
+    "restify": "^4.0.0"
+  }
+}
