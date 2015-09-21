@@ -1,7 +1,8 @@
-writeHistory = (memo) ->
+module.exports = (memo) ->
 
-  unless memo?.documents?
-    throw new Error('generateData must be called with an object containing a `documents` field.')
+  # Check input and initialize
+  unless memo?.snapshots?
+    throw new Error('secondSproc must be called with an object containing a `snapshots` field.')
   unless memo.totalCount?
     memo.totalCount = 0
   memo.countForThisRun = 0
@@ -10,9 +11,9 @@ writeHistory = (memo) ->
   collectionLink = collection.getSelfLink()
   memo.stillQueueing = true
 
-  createDocument = () ->
+  writeSnapshot = () ->
     if memo.documents.length > 0 and memo.stillQueueing
-      doc = memo.documents.pop()
+      doc = memo.snapshots.pop()
       getContext().getResponse().setBody(memo)
       memo.stillQueueing = collection.createDocument(collectionLink, doc, (error, resource, options) ->
         if error?
@@ -20,9 +21,9 @@ writeHistory = (memo) ->
         else if memo.stillQueueing
           memo.countForThisRun++
           memo.totalCount++
-          createDocument()
+          writeSnapshot()
         else
-          memo.documents.push(doc)
+          memo.snapshots.push(doc)
           memo.continuation = "value does not matter"
           getContext().getResponse().setBody(memo)
       )
@@ -30,6 +31,4 @@ writeHistory = (memo) ->
       memo.continuation = null
       getContext().getResponse().setBody(memo)
 
-  createDocument()
-
-exports.writeHistory = writeHistory
+  writeSnapshot()

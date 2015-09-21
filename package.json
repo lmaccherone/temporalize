@@ -2,7 +2,7 @@
   "name": "temporalize",
   "version": "0.1.0",
   "description": "Time-series storage and analysis engine built on top of NoSQL databases",
-  "main": "temporalize",
+  "main": "server.coffee",
   "scripts": {
     "test": "nodeunit"
   },
@@ -17,10 +17,14 @@
   "license": "For evaluation and non-commercial use. Contact for commericial license.",
   "devDependencies": {
     "coffee-script": "^1.9.3",
+    "documentdb-mock": "^0.1.4",
+    "nodemon": "^1.6.1",
     "nodeunit": "^0.9.1"
   },
   "dependencies": {
+    "documentdb-utils": "^0.3.4",
     "lumenize": "^0.9.12",
-    "restify": "^4.0.0"
+    "restify": "^4.0.0",
+    "sql-from-mongo": "^0.1.2"
   }
 }

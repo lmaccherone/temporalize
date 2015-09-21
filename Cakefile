@@ -26,6 +26,11 @@ runSyncRaw = (command, options) ->
   stderr = output.stderr?.toString()
   return {stderr, stdout}
 
+task('watch', 'Uses nodemon to restart server every time it senses a file change', () ->
+  process.chdir(__dirname)
+  console.log('Just run `nodemon`.')
+)
+
 task('compile', 'Compile CoffeeScript source files to JavaScript', () ->
   process.chdir(__dirname)
   fs.readdir('./', (err, contents) ->
