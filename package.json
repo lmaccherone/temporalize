@@ -25,6 +25,7 @@
   "dependencies": {
     "documentdb": "^1.2.2",
     "documentdb-utils": "^0.3.4",
+    "doubly-linked-list": "^0.2.1",
     "lumenize": "^0.9.12",
     "restify": "^4.0.3",
     "sql-from-mongo": "^0.1.2"

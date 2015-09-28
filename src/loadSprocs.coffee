@@ -3,6 +3,8 @@
 path = require('path')
 fs = require('fs')
 documentDBUtils = require('documentdb-utils')
+{DoublyLinkedList} = require('doubly-linked-list')
+
 
 insertMixins = (sproc, minify = false) ->
   # TODO: Minify resulting string if specified
@@ -12,42 +14,29 @@ insertMixins = (sproc, minify = false) ->
     when 'string'
       sprocString = sproc
   
-  annotationStartString = '/** @require:'
-  annotationEndString = '*/'
-  annotationStartIndex = sprocString.indexOf(annotationStartString)
-  if annotationStartIndex >= 0
-    startIndex = annotationStartIndex + annotationStartString.length
-    endIndex = sprocString.indexOf(annotationEndString)
-    requireSpecString = sprocString.substr(startIndex, endIndex - startIndex)
-    requireSpec = JSON.parse(requireSpecString)
-    functionToInsert = require(requireSpec.toRequireString)
-    unless typeof(functionToInsert) is 'function'
-      functionToInsert = functionToInsert[requireSpec.functionName]
-    functionToInsertString = functionToInsert.toString()
+  keyString = "= require("
+  sprocLines = sprocString.split('\n')
+  list = new DoublyLinkedList(sprocLines)
+  current = list.head
+  while current?
+    keyIndex = current.value.indexOf(keyString)
+    if keyIndex >= 0
+      variableString = current.value.substr(0, keyIndex).trim()
+      toRequireString = current.value.substr(keyIndex + keyString.length + 1)
+      toRequireString = toRequireString.substr(0, toRequireString.indexOf("'"))
+      functionToInsert = require(toRequireString)
+      unless typeof(functionToInsert) is 'function'
+        functionToInsert = functionToInsert[variableString]
+      functionToInsertString = "  var " + variableString + " = " + functionToInsert.toString() + ';\n'
+      current.value = functionToInsertString
+    current = current.after
 
-    unless minify
-      # TODO: Add the correct spaces. For now assuming 2.
-      functionRows = functionToInsertString.split('\n')
-      spacedFunctionRows = []
-      for row, index in functionRows
-        if index is 0
-          spacedFunctionRows.push(row)
-        else
-          spacedFunctionRows.push('  ' + row)
-      functionToInsertString = spacedFunctionRows.join('\n')
+  sprocString = list.toArray().join('\n')
 
-    beforeString = sprocString.substr(0, annotationStartIndex)
-    afterString = sprocString.substr(endIndex + annotationEndString.length)
-    sprocString = beforeString + "var " + requireSpec.functionName + " = " + functionToInsertString + ';\n' + afterString
+  if minify
+    console.log('Minify not implemented yet')
 
-    annotationStartIndex = sprocString.indexOf(annotationStartString)
-
-  if annotationStartIndex >= 0
-    insertMixins(sprocString)
-  else
-    if minify
-      console.log('Minify not implemented yet')
-    return sprocString
+  return sprocString
 
 loadSprocFromFile = (sprocFile, callback) ->
   sproc = require(sprocFile)

@@ -1,7 +1,5 @@
 # !TODO: Need to confirm that this user has write permission for the orgId that they specified.
 module.exports = (memo) ->
-
-  ###* @require: {"toRequireString": "sql-from-mongo", "functionName": "sqlFromMongo"} ###
   sqlFromMongo = require('sql-from-mongo')
 
   collection = getContext().getCollection()
