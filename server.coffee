@@ -3,37 +3,23 @@ fs = require('fs')
 path = require('path')
 
 hello = require("./src/hello")
-api = require("./src/api")
+snapshotApi = require("./src/snapshotApi")
 loadSprocs = require("./src/loadSprocs")
 
 port = process.env.PORT or 1338
-sprocLinks = {}
 
-loadServer = () ->
-  logResponseCallback = (err, response) ->
-    console.log(response)
+server = restify.createServer(
+  name: 'temporalize'
+  version: "0.1.0"
+)
+server.use(restify.authorizationParser())
+server.use(restify.bodyParser({mapParams: false}))
+server.use(restify.queryParser({mapParams: false}))
+server.locals = {}
 
-  server = restify.createServer(
-    name: 'temporalize'
-    version: "0.1.0"
-  )
-
-  server.use(restify.authorizationParser())
-  server.use(restify.bodyParser())
-  server.use(restify.queryParser())
-  server.get("/hello", hello.hello)
-  server.post("/snapshots", api.postSnapshots)
-  #server.post("/entity:entityID", write.entity)
-
+sprocDirectory = path.join(__dirname, 'sprocs')
+loadSprocs(sprocDirectory, server, () ->
   server.listen(port, () ->
     console.log("%s listening at %s", server.name, server.url)
   )
-
-sprocDirectory = path.join(__dirname, 'sprocs')
-loadSprocs(sprocDirectory, (returnedLinks) ->
-  sprocLinks = returnedLinks
-  console.log(sprocLinks)
-  loadServer()
 )
-
-

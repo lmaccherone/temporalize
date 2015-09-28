@@ -1,7 +1,8 @@
-api = require('../src/api')
+api = require('../src/snapshotApi')
 restify = require('restify')
 lumenize = require('lumenize')
 {TimeSeriesCalculator, Time} = lumenize
+documentdb = require('documentdb')
 
 snapshotsCSV = [
   ["ObjectID", "_ValidFrom",               "_ValidTo",                 "ScheduleState", "PlanEstimate", "TaskRemainingTotal", "TaskEstimateTotal"],
@@ -43,18 +44,51 @@ exports.snapshotsTest =
 
   postAndGetSnapshots: (test) ->
 
-
     client = restify.createJsonClient({
       url: 'http://localhost:1338',
       version: '*'
     })
 
+    orgId = documentdb.Base.generateGuidId()
+
     body =
-      _Org: '1234'
+      orgId: orgId
       snapshots: snapshots
 
-    client.post('/snapshots', body, (err, req, res) ->
-      console.log(res.body)
+    query =
+      _OrgId: orgId
+    queryString = JSON.stringify(query)
+    client.get('/snapshot', (err, req, res) ->
+      if err?
+        console.log(JSON.stringify(err, null, 2))
+        throw new Error(err)
+      console.log('after read', res.body)
     )
+
+#    client.post('/snapshot', body, (err, req, res) ->
+#      if err?
+#        console.log(JSON.stringify(err))
+#        throw new Error(JSON.stringify(err))
+#      # TODO: Now test if they really got there by reading
+#      query =
+#        _OrgId: orgId
+#      queryString = JSON.stringify(query)
+#      console.log('after write', res.body)
+##      client.get('/snapshot', (err, req, res) ->
+#      client.get('/snapshot?query=' + queryString, (err, req, res) ->
+#        if err?
+#          console.log(JSON.stringify(err, null, 2))
+#          throw new Error(err)
+#        console.log('after read', res.body)
+#        # Now delete all of these from this test run
+#        client.del('/org/' + orgId, (err, req, res) ->
+#          if err?
+#            console.log(JSON.stringify(err.message, null, 2))
+#            throw new Error(err)
+#          else
+#            console.log('after delete', res.body)
+#        )
+#      )
+#    )
 
     test.done()

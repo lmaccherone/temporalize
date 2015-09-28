@@ -38,9 +38,10 @@ insertMixins = (sproc, minify = false) ->
 
     beforeString = sprocString.substr(0, annotationStartIndex)
     afterString = sprocString.substr(endIndex + annotationEndString.length)
-    sprocString = beforeString + functionToInsertString + '\n' + afterString
+    sprocString = beforeString + "var " + requireSpec.functionName + " = " + functionToInsertString + ';\n' + afterString
 
-  annotationStartIndex = sprocString.indexOf(annotationStartString)
+    annotationStartIndex = sprocString.indexOf(annotationStartString)
+
   if annotationStartIndex >= 0
     insertMixins(sprocString)
   else
@@ -56,11 +57,14 @@ loadSprocFromFile = (sprocFile, callback) ->
 
   sprocString = insertMixins(sproc.toString())
 
+  if sprocName is 'deleteOrg'
+    console.log(sprocString)
+
   config =
     databaseID: 'test-stored-procedure'  # TODO: Need to parameterize this. What do we do when we have more than one db?
     collectionID: 'test-stored-procedure'
     storedProcedureID: sprocName
-    storedProcedureJS: sproc
+    storedProcedureJS: sprocString
     memo: null
   documentDBUtils(config, (err, response) ->
     if err?
@@ -69,7 +73,27 @@ loadSprocFromFile = (sprocFile, callback) ->
       callback(sprocName, response.storedProcedureLink)
   )
 
-module.exports = (sprocDirectory, callback) ->
+getHandler = (storedProcedureLink, storedProcedureName) ->
+  handler = (req, res, next) ->
+    config =
+      storedProcedureLink: storedProcedureLink
+      # Note, the line below assumes that the body/queryParser uses mapParams = false
+      memo: {params: req.params, query: req.query, body: req.body, authorization: req.authorization}
+      debug: true
+
+    documentDBUtils(config, (err, response) ->
+      if err?
+        console.log('Error', err)
+      next.ifError(err)
+      toReturn =
+        memo: response.memo
+        stats: response.stats
+      res.send(200, toReturn)
+      next()
+    )
+  return handler
+
+module.exports = (sprocDirectory, server, callback) ->
   sprocLinks = {}
   sprocFiles = fs.readdirSync(sprocDirectory)
   fullSprocFiles = []
@@ -81,14 +105,26 @@ module.exports = (sprocDirectory, callback) ->
     if fullSprocFiles.length > 0
       sprocFile = fullSprocFiles.pop()
       loadSprocFromFile(sprocFile, (sprocName, sprocLink) ->
-        if err?
-          throw new Error(err)
-        else
-          sprocLinks[sprocName] = sprocLink
-          if fullSprocFiles.length > 0
-            loadOneSproc(callback)
+        sprocLinks[sprocName] = sprocLink
+        dashIndex = sprocName.indexOf('-')
+        routeMethod = sprocName.substr(0, dashIndex)
+        routeEntity = sprocName.substr(dashIndex + 1)
+        handler = getHandler(sprocLink, sprocName)
+        switch routeMethod
+          when 'del', 'put'
+            server.del('/' + routeEntity + '/:id', handler)
+          when 'get'
+#            server.get('/' + routeEntity + '/:id', handler)
+            server.get('/' + routeEntity, handler)
+          when 'post'
+            server.post('/' + routeEntity, handler)
           else
-            callback(sprocLinks)
+            console.log('Warning, unrecognized routeMethod: ' + routeMethod + 'for ' + sprocName)
+        if fullSprocFiles.length > 0
+          loadOneSproc(callback)
+        else
+          server.locals.sprokLinks = sprocLinks
+          callback()
       )
 
   loadOneSproc(callback)

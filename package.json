@@ -18,13 +18,15 @@
   "devDependencies": {
     "coffee-script": "^1.9.3",
     "documentdb-mock": "^0.1.4",
-    "nodemon": "^1.6.1",
-    "nodeunit": "^0.9.1"
+    "nodemon": "^1.7.1",
+    "nodeunit": "^0.9.1",
+    "rewire": "^2.3.4"
   },
   "dependencies": {
+    "documentdb": "^1.2.2",
     "documentdb-utils": "^0.3.4",
     "lumenize": "^0.9.12",
-    "restify": "^4.0.0",
+    "restify": "^4.0.3",
     "sql-from-mongo": "^0.1.2"
   }
 }

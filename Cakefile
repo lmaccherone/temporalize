@@ -83,6 +83,7 @@ task('publish', 'Publish to npm and add git tags', () ->
     else
       console.error('`git status --porcelain` was not clean. Not publishing.')
   )
+  runSync('cake', ['clean'])
 )
 
 task('clean', 'Deletes .js and .map files', () ->
