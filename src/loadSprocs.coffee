@@ -5,6 +5,7 @@ fs = require('fs')
 documentDBUtils = require('documentdb-utils')
 {DoublyLinkedList} = require('doubly-linked-list')
 
+collectionLink = null
 
 insertMixins = (sproc, minify = false) ->
   # TODO: Minify resulting string if specified
@@ -25,9 +26,12 @@ insertMixins = (sproc, minify = false) ->
       toRequireString = current.value.substr(keyIndex + keyString.length + 1)
       toRequireString = toRequireString.substr(0, toRequireString.indexOf("'"))
       functionToInsert = require(toRequireString)
-      unless typeof(functionToInsert) is 'function'
+      if typeof(functionToInsert) is 'function'
+        functionToInsertString = "  " + variableString + " = " + functionToInsert.toString() + ';\n'
+      else
         functionToInsert = functionToInsert[variableString]
-      functionToInsertString = "  var " + variableString + " = " + functionToInsert.toString() + ';\n'
+        functionToInsertString = "  " + variableString + " = {" + variableString + ": " + functionToInsert.toString() + '};\n'
+
       current.value = functionToInsertString
     current = current.after
 
@@ -41,24 +45,26 @@ insertMixins = (sproc, minify = false) ->
 loadSprocFromFile = (sprocFile, callback) ->
   sproc = require(sprocFile)
   sprocName = path.basename(sprocFile, '.coffee')
-  unless typeof(sproc) is 'function'
-    sproc = sproc[sprocName]
-
   sprocString = insertMixins(sproc.toString())
-
-  if sprocName is 'deleteOrg'
-    console.log(sprocString)
+  unless typeof(sproc) is 'function'
+    sprocString = sproc[sprocName]
 
   config =
-    databaseID: 'test-stored-procedure'  # TODO: Need to parameterize this. What do we do when we have more than one db?
-    collectionID: 'test-stored-procedure'
     storedProcedureID: sprocName
     storedProcedureJS: sprocString
     memo: null
+
+  if collectionLink?
+    config.collectionLink = collectionLink
+  else
+    config.databaseID = 'test-stored-procedure'  # TODO: Need to parameterize this. What do we do when we have more than one db?
+    config.collectionID = 'test-stored-procedure'
+
   documentDBUtils(config, (err, response) ->
     if err?
       throw new Error(err)
     else
+      collectionLink = response.collectionLink
       callback(sprocName, response.storedProcedureLink)
   )
 
@@ -67,13 +73,13 @@ getHandler = (storedProcedureLink, storedProcedureName) ->
     config =
       storedProcedureLink: storedProcedureLink
       # Note, the line below assumes that the body/queryParser uses mapParams = false
-      memo: {params: req.params, query: req.query, body: req.body, authorization: req.authorization}
-      debug: true
+      memo: {params: req.params, query: req.query, body: req.body or {}, authorization: req.authorization}
+#      debug: true
 
     documentDBUtils(config, (err, response) ->
       if err?
-        console.log('Error', err)
-      next.ifError(err)
+        throw new Error("Error calling stored procedure #{storedProcedureName}\n#{JSON.stringify(err, null, 2)}")
+#      next.ifError(err)  # TODO: Need to figure out why using this doesn't hang up the connection. Maybe I need to add a post-error handler.
       toReturn =
         memo: response.memo
         stats: response.stats

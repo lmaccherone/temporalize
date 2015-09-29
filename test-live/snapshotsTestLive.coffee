@@ -58,29 +58,30 @@ exports.snapshotsTest =
     query =
       _OrgId: orgId
     queryString = JSON.stringify(query)
-    client.get('/snapshot', (err, req, res) ->
-      if err?
-        console.log(JSON.stringify(err, null, 2))
-        throw new Error(err)
-      console.log('after read', res.body)
-    )
 
-#    client.post('/snapshot', body, (err, req, res) ->
+#    client.get('/snapshot?query=' + queryString, (err, req, res) ->
 #      if err?
-#        console.log(JSON.stringify(err))
-#        throw new Error(JSON.stringify(err))
-#      # TODO: Now test if they really got there by reading
-#      query =
-#        _OrgId: orgId
-#      queryString = JSON.stringify(query)
-#      console.log('after write', res.body)
-##      client.get('/snapshot', (err, req, res) ->
-#      client.get('/snapshot?query=' + queryString, (err, req, res) ->
-#        if err?
-#          console.log(JSON.stringify(err, null, 2))
-#          throw new Error(err)
-#        console.log('after read', res.body)
-#        # Now delete all of these from this test run
+#        console.log(JSON.stringify(err, null, 2))
+#        throw err
+#      console.log('after read', res.body)
+#    )
+
+    client.post('/snapshot', body, (err, req, res) ->
+      if err?
+        console.log(JSON.stringify(err))
+        throw new Error(JSON.stringify(err))
+      # TODO: Now test if they really got there by reading
+      query =
+        _OrgId: orgId
+      queryString = JSON.stringify(query)
+      client.get('/snapshot?query=' + queryString, (err, req, res, obj) ->
+        if err?
+          console.log(JSON.stringify(err, null, 2))
+          throw new Error(err)
+        test.equal(obj.memo.snapshots.length, snapshots.length)
+        test.deepEqual(obj.memo.snapshots, snapshots)
+        test.deepEqual(snapshots, obj.memo.snapshots)
+        # Now delete all of these from this test run
 #        client.del('/org/' + orgId, (err, req, res) ->
 #          if err?
 #            console.log(JSON.stringify(err.message, null, 2))
@@ -88,7 +89,7 @@ exports.snapshotsTest =
 #          else
 #            console.log('after delete', res.body)
 #        )
-#      )
-#    )
+      )
+    )
 
     test.done()
