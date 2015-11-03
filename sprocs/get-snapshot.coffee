@@ -1,11 +1,19 @@
 # !TODO: Need to confirm that this user has write permission for the orgId that they specified.
 
 module.exports = (memo) ->
-  sqlFromMongo = require('../mixins/sqlFromMongo')
+  sqlFromMongoPackage = require('sql-from-mongo')
+  sqlFromMongo = sqlFromMongoPackage.sqlFromMongo
 #  sqlFromMongo = () ->
 #    return 'c.junk = 0'
 
   collection = getContext().getCollection()
+
+  compareValidFromForSorting = (a, b) ->
+    if a._ValidFrom < b._ValidFrom
+      return -1
+    if a._ValidFrom > b._ValidFrom
+      return 1
+    return 0
 
   unless memo.continuation?
     memo.continuation = null
@@ -48,12 +56,21 @@ module.exports = (memo) ->
       memo.continuation = options.continuation
     else
       memo.continuation = null
+    for row in resources
+      delete row._rid
+      delete row._ts
+      delete row._self
+      delete row._attachments
+      delete row._etag
     memo.snapshots = memo.snapshots.concat(resources)
     memo.count = memo.snapshots.length
 
-    setBody()
     if memo.stillQueueing and memo.continuation?
+      setBody()
       queryOnePage()
+    else
+      memo.snapshots.sort(compareValidFromForSorting)
+      setBody()
+      return memo
 
   queryOnePage()
-  return memo

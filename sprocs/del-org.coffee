@@ -4,8 +4,8 @@ module.exports = (memo) ->
 
   collection = getContext().getCollection()
 
-  unless memo?.params?.id?
-    throw new Error('Must pass in memo.params.id to del-org stored procedure.')
+  unless memo?.params?.link?
+    throw new Error('Must pass in memo.params.link to del-org stored procedure.')
   unless memo.rowsDeleted?
     memo.rowsDeleted = 0
   unless memo.continuation?
@@ -13,7 +13,7 @@ module.exports = (memo) ->
 
   toDelete = []
 
-  mongoQueryObject = {"_OrgId": memo.params.id}
+  mongoQueryObject = {"_OrgID": memo.params.link}
   queryString = 'SELECT c._self, c._etag FROM c WHERE ' + sqlFromMongo.sqlFromMongo(mongoQueryObject, 'c')
 
   memo.stillQueueing = true

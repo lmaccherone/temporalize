@@ -1,17 +1,19 @@
 # !TODO: Need to confirm that this user has write permission for the orgId specified
+# If the user passes in fully formed snapshots and the parameter "loadHistory=true"
 module.exports = (memo) ->
 
   # Check input and initialize
   unless memo.body.snapshots?
-    throw new Error('writeSnapshots must be called with an object containing a `body.snapshots` field.')
-  unless memo.body.orgId?
-    throw new Error('writeSnapshots must be called with an object containing a `body.orgId` field.')
+    throw new Error('post-snapshot must be called with an object containing a `body.snapshots` field.')
+  unless memo.body.orgID?
+    throw new Error('post-snapshot must be called with an object containing a `body.orgID` field.')
   unless memo.totalCount?
     memo.totalCount = 0
   memo.countForThisRun = 0
 
   for row in memo.body.snapshots
-    row._OrgId = memo.body.orgId
+    row._OrgID = memo.body.orgID
+    row._IsSnapshot = true
 
   collection = getContext().getCollection()
   collectionLink = collection.getSelfLink()

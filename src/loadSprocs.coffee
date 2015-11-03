@@ -1,53 +1,15 @@
 # TODO: Upgrade to accept parameters for databaseID and collectionID
 # TODO: Then, move this to documentdb-utils
+# TODO: Upgrade to use the new ID-based URI capability
 path = require('path')
 fs = require('fs')
 documentDBUtils = require('documentdb-utils')
-{DoublyLinkedList} = require('doubly-linked-list')
+expandSproc = require('./expandSproc')
 
 collectionLink = null
 
-insertMixins = (sproc, minify = false) ->
-  # TODO: Minify resulting string if specified
-  switch typeof(sproc)
-    when 'function'
-      sprocString = sproc.toString()
-    when 'string'
-      sprocString = sproc
-  
-  keyString = "= require("
-  sprocLines = sprocString.split('\n')
-  list = new DoublyLinkedList(sprocLines)
-  current = list.head
-  while current?
-    keyIndex = current.value.indexOf(keyString)
-    if keyIndex >= 0
-      variableString = current.value.substr(0, keyIndex).trim()
-      toRequireString = current.value.substr(keyIndex + keyString.length + 1)
-      toRequireString = toRequireString.substr(0, toRequireString.indexOf("'"))
-      functionToInsert = require(toRequireString)
-      if typeof(functionToInsert) is 'function'
-        functionToInsertString = "  " + variableString + " = " + functionToInsert.toString() + ';\n'
-      else
-        functionToInsert = functionToInsert[variableString]
-        functionToInsertString = "  " + variableString + " = {" + variableString + ": " + functionToInsert.toString() + '};\n'
-
-      current.value = functionToInsertString
-    current = current.after
-
-  sprocString = list.toArray().join('\n')
-
-  if minify
-    console.log('Minify not implemented yet')
-
-  return sprocString
-
 loadSprocFromFile = (sprocFile, callback) ->
-  sproc = require(sprocFile)
-  sprocName = path.basename(sprocFile, '.coffee')
-  sprocString = insertMixins(sproc.toString())
-  unless typeof(sproc) is 'function'
-    sprocString = sproc[sprocName]
+  {sprocString, sprocName} = expandSproc(sprocFile)
 
   config =
     storedProcedureID: sprocName
@@ -107,11 +69,12 @@ module.exports = (sprocDirectory, server, callback) ->
         handler = getHandler(sprocLink, sprocName)
         switch routeMethod
           when 'del', 'put'
-            server.del('/' + routeEntity + '/:id', handler)
+            server.del('/' + routeEntity + '/:link', handler)
           when 'get'
-#            server.get('/' + routeEntity + '/:id', handler)
+            server.get('/' + routeEntity + '/:link', handler)
             server.get('/' + routeEntity, handler)
           when 'post'
+            server.post('/' + routeEntity + '/:link', handler)
             server.post('/' + routeEntity, handler)
           else
             console.log('Warning, unrecognized routeMethod: ' + routeMethod + 'for ' + sprocName)

@@ -14,7 +14,7 @@ exports.deleteOrgTest =
 
     mock.nextResources = snapshots
 
-    mock.package({params: {id: '1234'}})
+    mock.package({params: {link: '1234'}})
 
     test.equal(mock.lastBody.rowsDeleted, 3)
     test.ok(!mock.lastBody.continuation?)

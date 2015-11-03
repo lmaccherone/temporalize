@@ -16,7 +16,7 @@ exports.postSnapshotTest =
     for row in snapshots
       reverse.unshift(row)
 
-    mock.package({body: {snapshots: snapshots, orgId: '1234'}})
+    mock.package({body: {snapshots: snapshots, orgID: '1234'}})
 
     test.equal(mock.lastBody.totalCount, 3)
     test.equal(mock.lastBody.countForThisRun, 3)
