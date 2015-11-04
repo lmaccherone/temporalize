@@ -37,7 +37,19 @@ module.exports = (newRevisionOfEntity, authorization, authorizationFunction) ->
       throw new Error("Found no user with the username: #{username}")
     user = resources[0]
     memo.user = user
+
+    memo.gotHere = true
     # Confirm that the authorization matches the hash of the retrieved user
+    # TODO: calculating the hash with 987 iterations took 500 RUs. An S1 only has 250 RUs so, I reduced it to 32. Upgrade
+    # to use tokens. We can store the token in the user document along with the date-timestamp when it expires.
+    # We'll have to figure out a way to indicate authentication failure other than throwing an error so the restify API
+    # can send back a 403. Alternatively, I could do the authentication in restify instead of DocumentDB sprocs. Note, be
+    # sure to send back the token as a cookie (restify-cookies) to support browser access as well as a header to support non-browser calling.
+    # The username needs to get in the cookies also, but we can just keep using the basic auth username for non-cookie auth
+    hashOfCallerAuth = pbkdf2(password, user.salt, 32, 64)
+    memo.hashOfCallerAuth = hashOfCallerAuth
+    unless hashOfCallerAuth is user.hashedCredentials
+      throw new Error('Authentication failed')
 
     delete memo.user.password  # Shouldn't be in here but doing this defensively
     delete memo.user.salt
@@ -48,12 +60,12 @@ module.exports = (newRevisionOfEntity, authorization, authorizationFunction) ->
     delete memo.user._attachments
     delete memo.user._etag
 
-    # if the newRevisionOfEntity does not have an _orgID, then check the orgIDsThisUserCanRead field of the user. If it's only one long, then add it to the orgID field in the newRevisionOfEntity, else throw an error.
+    # if the newRevisionOfEntity does not have an _OrgID, then check the orgIDsThisUserCanWrite field of the user. If it's only one long, then add it to the orgID field in the newRevisionOfEntity, else throw an error.
     unless newRevisionOfEntity._OrgID
-      if user.orgIDsThisUserCanRead.length is 1
-        newRevisionOfEntity._OrgID = user.orgIDsThisUserCanRead[0]
+      if user.orgIDsThisUserCanWrite.length is 1
+        newRevisionOfEntity._OrgID = user.orgIDsThisUserCanWrite[0]
       else
-        throw new Error('newRevisionOfEntity is missing _OrgID and the user has read permission for more than one orgID. Provide an _OrgID with newRevisionOfEntity.')
+        throw new Error('newRevisionOfEntity is missing _OrgID and the user can write to none or more than one org. Provide an _OrgID with newRevisionOfEntity.')
 
 
   # hasPermissionResult = hasPermission(user.username, entity._OrgLink)

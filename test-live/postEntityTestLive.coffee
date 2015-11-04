@@ -41,6 +41,7 @@ exports.postEntityTestLive =
         throw new Error(JSON.stringify(err))
 
 #      console.log('obj.memo', obj.memo)
+      console.log(obj.stats)
       user = obj.memo.user
       test.equal(user._IsTEMPORALIZE_USER, true)
       test.equal(user.username, username)

@@ -2,8 +2,8 @@ restify = require("restify")
 fs = require('fs')
 path = require('path')
 
-hello = require("./src/hello")
-snapshotApi = require("./src/snapshotApi")
+#hello = require("./src/hello")
+#snapshotApi = require("./src/snapshotApi")
 loadSprocs = require("./src/loadSprocs")
 
 port = process.env.PORT or 1338

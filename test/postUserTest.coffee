@@ -1,20 +1,5 @@
 DocumentDBMock = require('documentdb-mock')
 path = require('path')
-pbkdf2 = require('../mixins/pbkdf2')
-randomBytes = require('../mixins/randomBytes')
-#console.log(pbkdf2.toString())
-#x = pbkdf2("S8OTug==", "CQcgCw==", 126, 12)
-#
-#console.log(x)
-#
-#salt = randomBytes(15).toString('base64')
-#console.log(salt)
-#
-#for i in [0..100000]
-#  x = Math.floor(Math.random() * 255)
-#  if x > 255
-#    console.log('whopse')
-##console.log(salt, salt.length)
 
 exports.postUserTest =
 

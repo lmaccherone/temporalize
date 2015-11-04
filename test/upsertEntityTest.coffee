@@ -1,6 +1,7 @@
 DocumentDBMock = require('documentdb-mock')
 path = require('path')
 documentdb = require('documentdb')
+utils = require(path.join(__dirname, '..', 'src', 'utils'))
 
 exports.upsertEntityTest =
 
@@ -11,12 +12,14 @@ exports.upsertEntityTest =
       _EntityID: documentdb.Base.generateGuidId()
       "username": "admin@somewhere.com"
       "salt": "abcd"
-      "hashedCredentials": "something"
+      "hashedCredentials": "gNTkDcV8EwZSB0QPdMq/px+bDGARLr30K0mepnWkyZEJOGh2qdtwKw2W4H4csRX603G1zhZ57BGhOfSGGTYFXQ=="
       "orgIDsThisUserCanRead": ["ID1", "ID2", "ID3"]
       "orgIDsThisUserCanWrite": ["ID1", "ID2"]
       "orgIDsThisUserIsAdmin": ["ID1"]
 
-    mock.nextResources = [user]
+    userCleaned = utils.clone(user)
+    delete userCleaned.hashedCredentials
+    delete userCleaned.salt
 
     entityTypes = ["Story"]
     newRevisionOfEntity =
@@ -32,12 +35,20 @@ exports.upsertEntityTest =
       return true
 
     test.throws(() ->
+      mock.nextResources = [utils.clone(user)]
+      mock.package(newRevisionOfEntity, authorization, authorizationFunction)
+    )
+
+    test.throws(() ->
+      cloneUser = utils.clone(user)
+      clonedUser.hashedCredentials = '1234'
+      mock.nextResources = [clonedUser]
       mock.package(newRevisionOfEntity, authorization, authorizationFunction)
     )
 
     newRevisionOfEntity._OrgID = 'ID1'
+    mock.nextResources = [utils.clone(user)]
     result = mock.package(newRevisionOfEntity, authorization, authorizationFunction)  # Since this is a mixin, it has more than just a single memo parameter
-    test.deepEqual(mock.lastBody.user, user)
-
+    test.deepEqual(mock.lastBody.user, userCleaned)
 
     test.done()
